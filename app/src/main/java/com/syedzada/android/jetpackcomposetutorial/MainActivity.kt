@@ -10,32 +10,46 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.syedzada.android.jetpackcomposetutorial.ui.theme.JetpackComposeTutorialTheme
+import kotlin.math.exp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             JetpackComposeTutorialTheme {
-                FlatText()
+                ExpandableCard(
+                    title = "My Title",
+                    body = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+                )
             }
         }
     }
 }
 
 
-@Preview(showBackground = true)
 @Composable
 fun FlatText() {
     Text(text = "Hello - ")
@@ -43,7 +57,6 @@ fun FlatText() {
 }
 
 
-@Preview(showBackground = true)
 @Composable
 fun LinearLayoutHorizontal() {
     Row(modifier = Modifier.fillMaxSize()) {
@@ -52,7 +65,6 @@ fun LinearLayoutHorizontal() {
     }
 }
 
-@Preview(showBackground = true)
 @Composable
 fun LinearLayoutVertical() {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -61,7 +73,6 @@ fun LinearLayoutVertical() {
     }
 }
 
-@Preview(showBackground = true)
 @Composable
 fun SimilarFrameLayout() {
     Box {
@@ -90,7 +101,6 @@ fun SimilarFrameLayout() {
 * and then redrawn recomposition occur.
 * */
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun MyButton() {
     // state
@@ -132,7 +142,6 @@ fun MyButton() {
 *   Example TextField
 * */
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PlainTextComposable() {
     var name by remember {
@@ -190,4 +199,66 @@ fun ScreenContent(
             Text(text = "Name")
         }
     )
+}
+/* Uni-directional data flow pattern
+*   ViewModel (Survive configuration changes)
+*       -> State => (FirstScreen())
+*       <- Event
+*   FirstScreen()
+*       -> State => (ScreenContent())
+*       <- Event
+*   ScreenContent()
+* */
+/*
+* URL Code-labs: "ViewModel and State in Compose"
+* https://developer.android.com/codelabs/basic-android-kotlin-compose-viewmodel-and-state#0
+* */
+class MyViewModel: ViewModel() {
+    // LiveData holds state which is observed by the UI.
+    // (State flows down from ViewModel)
+    private val _name = MutableLiveData("")
+    val name:LiveData<String> = _name
+
+    // onNameChanged is an event we're
+    // defining that the UI can invoke/
+    // (Events flow up from UI)
+    fun onNameChanged(newName:String) {
+        _name.value = newName
+    }
+}
+
+@Composable
+fun FirstScreen(
+    myViewModel: MyViewModel = viewModel()
+) {
+    val name:String by myViewModel.name.observeAsState("")
+
+    ScreenContent(
+        name = name,
+        onNameChange = { myViewModel.onNameChanged(it) }
+    )
+}
+
+@Composable
+fun ExpandableCard(title:String, body:String) {
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+    Card {
+        Column {
+            Text(text = title)
+            // Content of the card depends on the current value of expanded
+            if(expanded) {
+                Text(text = body)
+                IconButton(onClick = { expanded = false }) {
+                    Icon(Icons.Default.ExpandLess, contentDescription = "Collapse")
+                }
+            } else {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(Icons.Default.ExpandMore, contentDescription = "Expand")
+                }
+            }
+        }
+    }
 }
